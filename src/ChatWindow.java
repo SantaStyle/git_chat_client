@@ -278,9 +278,9 @@ public class ChatWindow extends JFrame {
     public void reloadpanel(String user) {
         fontUser = new Font(null, Font.BOLD, 20);
         jpanUser.removeAll();
-        //String text = "Пользов.";
+
         String[] w = user.split("\\s");
-        //w[0] = text;
+
         for (int i = 1; i < w.length; i++) {
             label = new JLabel(w[i]);
             label.setVerticalAlignment(JLabel.NORTH);
