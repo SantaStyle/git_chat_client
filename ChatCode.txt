@@ -1,0 +1,622 @@
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.net.Socket;
+import javax.swing.border.EmptyBorder;
+
+
+public class MainClass {
+    public static void main(String[] args) {
+        new LogWindow();
+    }
+}
+
+class LogWindow extends JFrame{
+    private final int width_screen = Toolkit.getDefaultToolkit().getScreenSize().width;
+    private final int height_screen = Toolkit.getDefaultToolkit().getScreenSize().height;
+    private final int window_width = 400;
+    private final int window_height = 400;
+    private JTextField txtlog;
+    private JPasswordField txtpass;
+    private final JFrame frame = this;
+    private JTextField nick = null;
+    private ChatWindow chatWindow;
+
+    public LogWindow() {
+        //настройка общего окна входа в чат
+        setTitle("Вход в чат");
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        setBounds((width_screen-window_width)/2,(height_screen-window_height)/2,window_width,window_height);
+
+        //добавляем верхнее меню
+        JMenuBar jMenuBar = new JMenuBar();
+        setJMenuBar(jMenuBar);
+        //добавляем выпадающий список файл
+        JMenu menufile = new JMenu("Файл");
+        menufile.addSeparator();
+        jMenuBar.add(menufile);
+        JMenuItem jminew = new JMenuItem("Регистрация");
+        menufile.add(jminew);
+        JMenuItem jmiexit = new JMenuItem("Выход");
+        menufile.add(jmiexit);
+
+        //добавляем выпадающий список
+        JMenu helpmenu = new JMenu("Помощь");
+        helpmenu.addSeparator();
+        jMenuBar.add(helpmenu);
+        JMenuItem menureference = new JMenuItem("Справка");
+        helpmenu.add(menureference);
+
+        // Настраиваем горизонтальную панель (для ввода логина)
+        Box box1 = Box.createHorizontalBox();
+        JLabel loginLabel = new JLabel("Логин:");
+        txtlog = new JTextField(15);
+        box1.add(loginLabel);
+        box1.add(Box.createHorizontalStrut(6));
+        box1.add(txtlog);
+
+        // Настраиваем горизонтальную панель (для ввода пароля)
+        Box box2 = Box.createHorizontalBox();
+        JLabel passwordLabel = new JLabel("Пароль:");
+        txtpass = new JPasswordField(15);
+        box2.add(passwordLabel);
+        box2.add(Box.createHorizontalStrut(6));
+        box2.add(txtpass);
+
+        // Настраиваем горизонтальную панель (с кнопками)
+        Box box3 = Box.createHorizontalBox();
+        JButton ok = new JButton("Войти");
+        JButton cancel = new JButton("Выход");
+        box3.add(Box.createHorizontalGlue());
+        box3.add(ok);
+        box3.add(Box.createHorizontalStrut(35));
+        box3.add(cancel);
+
+        // Настраиваем горизонтальную панель (с кнопкой регистрация)
+        Box box4 = Box.createHorizontalBox();
+        JButton regNewUser = new JButton("Регистрация");
+        box4.add(Box.createHorizontalGlue());
+        box4.add(regNewUser);
+
+        // Уточняем размеры компонентов
+        loginLabel.setPreferredSize(passwordLabel.getPreferredSize());
+
+        // Размещаем горизонтальные панели на одной вертикальной
+        Box mainBox = Box.createVerticalBox();
+        mainBox.setBorder(new EmptyBorder(12,12,12,12));
+        mainBox.add(box1);
+        mainBox.add(Box.createVerticalStrut(12));
+        mainBox.add(box2);
+        mainBox.add(Box.createVerticalStrut(17));
+        mainBox.add(box3);
+        mainBox.add(Box.createVerticalStrut(15));
+        mainBox.add(box4);
+        setContentPane(mainBox);
+        pack();
+        setResizable(false);
+
+        //действие по нажатии кнопки "регистрация" - открывается окно регистрации
+        regNewUser.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Reg_new_user rg = new Reg_new_user();
+                rg.setVisible(true);
+            }
+        });
+
+        //действие по нажатии кнопки "ок" - подключаемся к серверу и проходим проверку пользователя
+        ok.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                chatWindow = new ChatWindow();
+                chatWindow.connect(txtlog, txtpass, nick);
+                chatWindow.setVisible(true);
+                setVisible(false);
+            }
+        });
+
+        //действие по нажатии кнопки "выход" - выход из программы
+        cancel.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.exit(0);
+            }
+        });
+
+        //действие по нажатии Enter в поле "пароль" - действия аналогичные как и при нажатии кнопки ок
+        txtpass.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                chatWindow = new ChatWindow();
+                chatWindow.connect(txtlog, txtpass, nick);
+                chatWindow.setVisible(true);
+                setVisible(false);
+            }
+        });
+
+        //действие по нажатии кнопки "регистрация" - открывается окно регистрации
+        jminew.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Reg_new_user rg = new Reg_new_user();
+                rg.setVisible(true);
+            }
+        });
+
+        //действие по нажатии "справка" - открывается окно справки
+        menureference.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                MenuReferenceWindow mrw = new MenuReferenceWindow();
+                mrw.setVisible(true);
+            }
+        });
+
+        //действие по нажатии кнопки "выход" - выход из программы
+        jmiexit.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.exit(0);
+            }
+        });
+
+        setVisible(true);
+
+    }
+
+}
+
+
+class Reg_new_user extends JFrame {
+    private final int width_screen = Toolkit.getDefaultToolkit().getScreenSize().width;
+    private final int height_screen = Toolkit.getDefaultToolkit().getScreenSize().height;
+    private final int window_width = 400;
+    private final int window_height = 400;
+    private ChatWindow ch;
+
+    public Reg_new_user() throws HeadlessException {
+        //настройка общего окна регистрации нового пользователя
+        setTitle("Регистрация пользователя");
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        setBounds((width_screen-window_width)/2,(height_screen-window_height)/2,window_width,window_height);
+
+        // Настраиваем горизонтальную панель (для ввода нового логина)
+        Box box1 = Box.createHorizontalBox();
+        JLabel loginLabel = new JLabel("Логин:");
+        JTextField txtlogin = new JTextField(15);
+        box1.add(loginLabel);
+        box1.add(Box.createHorizontalStrut(6));
+        box1.add(txtlogin);
+        // Настраиваем горизонтальную панель (для ввода нового пароля)
+        Box box2 = Box.createHorizontalBox();
+        JLabel passwordLabel = new JLabel("Пароль:");
+        JPasswordField txtpassword = new JPasswordField(15);
+        box2.add(passwordLabel);
+        box2.add(Box.createHorizontalStrut(6));
+        box2.add(txtpassword);
+        // Настраиваем горизонтальную панель (для ввода нового никнейма)
+        Box box3 = Box.createHorizontalBox();
+        JLabel nicklabel = new JLabel("Nick: ");
+        JTextField txtnick = new JTextField(15);
+        box3.add(nicklabel);
+        box3.add(Box.createHorizontalStrut(6));
+        box3.add(txtnick);
+        // Настраиваем горизонтальную панель (с кнопками)
+        Box box4 = Box.createHorizontalBox();
+        JButton reg = new JButton("Зарегистрировать");
+        JButton cancel = new JButton("Отмена");
+        box4.add(Box.createHorizontalGlue());
+        box4.add(reg);
+        box4.add(Box.createHorizontalStrut(10));
+        box4.add(cancel);
+        // Уточняем размеры логина и никнейма
+        loginLabel.setPreferredSize(passwordLabel.getPreferredSize());
+        nicklabel.setPreferredSize(passwordLabel.getPreferredSize());
+        // Размещаем горизонтальные панели на одной вертикальной
+        Box mainBox = Box.createVerticalBox();
+        mainBox.setBorder(new EmptyBorder(12,12,12,12));
+        mainBox.add(box1);
+        mainBox.add(Box.createVerticalStrut(12));
+        mainBox.add(box2);
+        mainBox.add(Box.createVerticalStrut(17));
+        mainBox.add(box3);
+        mainBox.add(Box.createVerticalStrut(15));
+        mainBox.add(box4);
+        setContentPane(mainBox);
+        pack();
+
+        //действие при нажатии кнопки "отмена" - скрывается панель регистрации
+        cancel.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                setVisible(false);
+            }
+        });
+
+        //действие при нажатии кнопки "Зарегистрировать" - подключаемся к серверу, проходим проверку логина, никнейма.
+        reg.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ch = new ChatWindow();
+                ch.connect(txtlogin,txtpassword,txtnick);
+                setVisible(false);
+            }
+        });
+
+        setResizable(false);
+    }
+}
+
+
+
+class ChatWindow extends JFrame {
+    private final int width_screen = Toolkit.getDefaultToolkit().getScreenSize().width;
+    private final int height_screen = Toolkit.getDefaultToolkit().getScreenSize().height;
+    private final int window_width = 400;
+    private final int window_height = 400;
+
+    private JTextArea jtarea;
+    private JTextField jtfield;
+    private Socket s;
+    private DataInputStream in;
+    private DataOutputStream out;
+    private Thread thr;
+    private Boolean isAuthorized;
+    private String myNick;
+    private LogWindow log;
+    private Reg_new_user rgnew;
+    private JLabel label;
+    private JPanel jpanUser;
+    private static List<String> labels = new ArrayList<String>();
+    private Font fontUser;
+
+    public ChatWindow() {
+
+        //настройка общего окна чата
+        setBounds((width_screen - window_width) / 2, (height_screen - window_height) / 2, window_width, window_height);
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        thr = null;
+        isAuthorized = false;
+        setLayout(new BorderLayout());
+
+        //добавляем верхнее меню
+        JMenuBar jMenuBar = new JMenuBar();
+        setJMenuBar(jMenuBar);
+        //добавляем выпадающий список
+        JMenu helpmenu = new JMenu("Помощь");
+        helpmenu.addSeparator();
+        jMenuBar.add(helpmenu);
+        JMenuItem menureference = new JMenuItem("Справка");
+        helpmenu.add(menureference);
+
+        //настройка текстового поля чата с сообщениями от пользователей
+        jtarea = new JTextArea();
+        jtarea.setEditable(false);
+        jtarea.setLineWrap(true);
+        JScrollPane jspane = new JScrollPane(jtarea);
+        add(jspane, BorderLayout.CENTER);
+
+        //панель для активных пользователей
+        jpanUser = new JPanel();
+        add(jpanUser, BorderLayout.EAST);
+
+        //панель кнопки "отправить" и текстового поля для ввода текста
+        JPanel bottom = new JPanel(new BorderLayout());
+        jtfield = new JTextField(25);
+        JButton sendMSGb = new JButton("отправить");
+        bottom.add(jtfield, BorderLayout.CENTER);
+        bottom.add(sendMSGb, BorderLayout.EAST);
+        add(bottom, BorderLayout.SOUTH);
+
+        // Уточняем размеры панели активных пользователей
+        jpanUser.setPreferredSize(sendMSGb.getPreferredSize());
+
+        //действие при нажатии Enter в текстовом поле для отправки сообщения пользователям
+        jtfield.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                sendMSG();
+            }
+        });
+
+        //действие при нажатии кнопки "отправить" для отправки сообщения пользователям
+        sendMSGb.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                sendMSG();
+            }
+        });
+
+        //действие по нажатии "справка" - открывается окно справки
+        menureference.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                MenuReferenceWindow mrw = new MenuReferenceWindow();
+                mrw.setVisible(true);
+            }
+        });
+
+        //действие при закрытии чата, закрытие потока
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent e) {
+
+                try {
+                    s.close();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        });
+    }
+
+    //Указываем ник пользователя в шапке чата
+    public void setMyNick(String myNick) {
+        this.myNick = myNick;
+        setTitle("Пользователь [ " + myNick + " ]");
+    }
+    //получаем никнейм пользователя
+    public String getMyNick() {
+        return myNick;
+    }
+
+    public void connect(JTextField txtlog, JPasswordField txtpass, JTextField txtnick) {
+        if (s == null || (s != null && s.isClosed())) {
+            try {
+                s = new Socket("127.0.0.1", 8189);
+                in = new DataInputStream(s.getInputStream());
+                out = new DataOutputStream(s.getOutputStream());
+                //подключение зарегистрированного пользователя в чат(проверка логина пароля)
+                if (txtnick == null) {
+                    out.writeUTF("/auth" + " " + txtlog.getText() + " " + new String(txtpass.getPassword()));
+
+                    //подключение для регистрации нового пользователя
+                } else if (txtnick != null) {
+                    out.writeUTF("/reg" + " " + txtlog.getText() + " " + new String(txtpass.getPassword()) + " "
+                            + txtnick.getText());
+                }
+            } catch (IOException e) {
+
+                e.printStackTrace();
+            }
+
+            if (thr == null) {
+                thr = new Thread(() -> {
+
+                    String str = null;
+                    try {
+                        while (true) {
+                            str = in.readUTF();
+                            if (str != null) {
+                                //действия если  для авторизация нового пользователя
+                                if (!isAuthorized) {
+                                    // проверка на при подключении нового пользователя
+                                    if (str.startsWith("/yes")) {
+                                        String[] w = str.split("\\s");
+                                        setMyNick(w[1]);
+                                        isAuthorized = true;
+                                        continue;
+                                        //обновление панели чата с активными пользователя при подключении к серверу
+                                    } else if (str.startsWith("/listuser")) {
+                                        reloadpanel(str);
+                                        //проверка на логин и пароль при входе в чат
+                                    } else if (str.equals("stop")) {
+                                        isAuthorized = false;
+                                        log = new LogWindow();
+                                        setVisible(false);
+                                        JOptionPane.showMessageDialog(this, "Неправильно введен логин или пароль");
+                                        thr = null;
+                                        s.close();
+                                        break;
+                                        //проверка логина при входе пользователя в чат, если есть такой, система не пустит.
+                                    } else if (str.equals("NickBusy")) {
+                                        isAuthorized = false;
+                                        log = new LogWindow();
+                                        setVisible(false);
+                                        JOptionPane.showMessageDialog(this, "Логин:  " + txtlog.getText() + " уже авторизирован");
+                                        thr = null;
+                                        s.close();
+                                        break;
+                                        //проверка логина в чате при регистрации нового пользователя
+                                    } else if (str.equals("StopUser")) {
+                                        rgnew = new Reg_new_user();
+                                        rgnew.setVisible(true);
+                                        JOptionPane.showMessageDialog(this, "Пользователь с таким логином существует в базе");
+                                        isAuthorized = false;
+                                        thr = null;
+                                        s.close();
+                                        break;
+                                        //проверка ника в чате при регистрации нового пользователя
+                                    } else if (str.equals("StopNick")) {
+                                        rgnew = new Reg_new_user();
+                                        rgnew.setVisible(true);
+                                        JOptionPane.showMessageDialog(this, "Пользователь с таким ником существует в базе");
+                                        isAuthorized = false;
+                                        thr = null;
+                                        s.close();
+                                        break;
+                                    }
+                                }
+                                //действия если авторизированный пользователь
+                                if (isAuthorized) {
+                                    //сообщение в текстовое поле чата(общий)
+                                    if (!str.startsWith("/listuser")) {
+                                        jtarea.append(str + " " + '\n');
+                                    }
+                                    jtarea.setCaretPosition(jtarea.getDocument().getLength());
+                                    System.err.print(str + " ");
+
+                                    //команда для выхода из чата(прописывается в текстовом поле чата)
+                                    if (str.equals("end")) break;
+                                    //команда для изменения ника в чате(прописывается в текстовом поле чата)
+                                    if (str.startsWith("/nickchanged")) {
+                                        String[] w = str.split("\\s");
+                                        setMyNick(w[1]);
+                                        continue;
+                                    }
+                                    //обновление панели активных пользователей при подключении нового пользователя
+                                    if (str.startsWith("/listuser")) {
+                                        reloadpanel(str);
+                                    }
+                                    //обновление панели активных пользователей при изменении никнейма пользователя
+                                    if (str.startsWith("/listuserchang")){
+                                        reloadpanel(str);
+                                    }
+                                }
+
+                            }
+                            try {
+                                Thread.sleep(100);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    } catch (IOException ex) {
+                        //при отключении сервера данный метод используется для переподключения пользователя
+                        reconnect();
+                    }
+
+                });
+                thr.start();
+            }
+
+        }
+    }
+
+    //метод для отправки сообщений
+    public void sendMSG() {
+        try {
+            out.writeUTF(jtfield.getText());
+            out.flush();
+            jtfield.setText("");
+            jtfield.grabFocus();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.err.println();
+
+
+    }
+
+    //метод для переподключения пользователя к серверу
+    public void reconnect() {
+        try {
+            isAuthorized = false;
+            s.close();
+            thr = null;
+            log = new LogWindow();
+            setVisible(false);
+            setMyNick("");
+            JOptionPane.showMessageDialog(this, "Сбой подключения, необходимо повторно авторизироваться!");
+        } catch (IOException e1) {
+            e1.printStackTrace();
+        }
+    }
+
+    //метод для обновления данныых об активных пользователях
+    public void reloadpanel(String user) {
+        fontUser = new Font(null, Font.BOLD, 20);
+        jpanUser.removeAll();
+        //String text = "Пользов.";
+        String[] w = user.split("\\s");
+        //w[0] = text;
+        for (int i = 1; i < w.length; i++) {
+            label = new JLabel(w[i]);
+            label.setVerticalAlignment(JLabel.NORTH);
+            label.setHorizontalAlignment(JLabel.CENTER);
+            label.setFont(fontUser);
+            jpanUser.add(label);
+        }
+        label.setPreferredSize(jpanUser.getPreferredSize());
+        jpanUser.repaint();
+        jpanUser.revalidate();
+        jpanUser.validate();
+
+    }
+}
+
+/*
+класс настройки текстового поля
+ */
+class MyTextField extends JTextField {
+    private String hint;
+    private static Font hintFont = new Font("Arial",Font.PLAIN,14);
+
+    public MyTextField(String hint){
+        this.hint = hint;
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        if(getText().isEmpty()){
+            g.setColor(Color.blue);
+            g.setFont(hintFont);
+            g.drawString(hint,3,17);
+        }
+    }
+}
+
+
+
+class MenuReferenceWindow extends JFrame {
+    private final int width_screen = Toolkit.getDefaultToolkit().getScreenSize().width;
+    private final int height_screen = Toolkit.getDefaultToolkit().getScreenSize().height;
+    private final int window_width = 400;
+    private final int window_height = 400;
+    public MenuReferenceWindow() {
+        //настройка общего окна справки
+        setTitle("Справка");
+        setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
+        setBounds((width_screen)/6,(height_screen)/4,window_width,window_height);
+
+        // Настраиваем вертикальную панель
+        Box box = Box.createVerticalBox();
+        JLabel loginLabel1 = new JLabel("Дополнительные возможности для пользователя:");
+        JLabel loginLabel12 = new JLabel(" ");
+        JLabel loginLabel2 = new JLabel("Команда для изменения никнейма: в текстовом поле чата необходимо написать /changenick + новый никнейм");
+        JLabel loginLabel3 = new JLabel("Пример изменения никнейма: /changenick newnick");
+        JLabel loginLabel13 = new JLabel(" ");
+        JLabel loginLabel4 = new JLabel("Команда для выхода из чата: в текстовом поле чата необходимо написать /end");
+        JLabel loginLabel14 = new JLabel(" ");
+        JLabel loginLabel5 = new JLabel("Команда для отправки сообщения определенному пользователю: в текстовом поле чата необходимо написать /pm + nick + текст сообщения");
+        JLabel loginLabel6 = new JLabel("Пример отправки сообщения определенному пользователю: /pm nick1 привет");
+
+        //Размещаем горизонтальные панели на одной вертикальной
+        box.add(loginLabel1);
+        box.add(Box.createHorizontalStrut(6));
+        box.add(loginLabel12);
+        box.add(Box.createHorizontalStrut(6));
+        box.add(loginLabel2);
+        box.add(Box.createHorizontalStrut(6));
+        box.add(loginLabel3);
+        box.add(Box.createHorizontalStrut(6));
+        box.add(loginLabel13);
+        box.add(Box.createHorizontalStrut(6));
+        box.add(loginLabel4);
+        box.add(Box.createHorizontalStrut(6));
+        box.add(loginLabel14);
+        box.add(Box.createHorizontalStrut(6));
+        box.add(loginLabel5);
+        box.add(Box.createHorizontalStrut(6));
+        box.add(loginLabel6);
+        box.add(Box.createHorizontalStrut(6));
+
+        // Размещаем вертикальные панели на одной вертикальной
+        Box mainBox = Box.createVerticalBox();
+        mainBox.setBorder(new EmptyBorder(12,12,12,12));
+        mainBox.add(box);
+        setContentPane(mainBox);
+        pack();
+        setResizable(false);
+    }
+}
+
